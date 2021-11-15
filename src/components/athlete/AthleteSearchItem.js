@@ -18,7 +18,7 @@ const AthleteSearchItemm = (props) => {
         )
     }
     return (
-        <div className="col-12 col-md-4 col-xl-4 col-xxl-2 mt-3">
+        <div className="col-12 col-md-4 col-xl-4 col-xxl-3 mt-3">
             <div className="app-card app-card-doc shadow-sm  h-100">
                 <div className="app-card-thumb-holder p-3">
                     <div className="app-card-thumb">

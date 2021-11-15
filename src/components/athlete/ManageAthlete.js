@@ -279,7 +279,7 @@ const ManageAthlete = (props) => {
                                             </div>
                                             <div className="col-auto">
                                                 <button className="btn btn-danger" onClick={onClearClick}>
-                                                    clear
+                                                    Clear
                                                 </button>
                                             </div>
                                         </div>
@@ -289,7 +289,9 @@ const ManageAthlete = (props) => {
                         </div>
                         <div className="row mt-3">
                             {
-                                loaderSubmit ? ("Loading") : (
+                                loaderSubmit ? (<div className="col-12 text-center mt-5">
+                                                    <Loader type="Bars" color={THEME_COLOR_CODE} height={30} width={80} />
+                                                </div>) : (
                                     athletes.map(athlete => (
                                         <AthleteSearchItem handleShow={handleShow} athlete={athlete}/>
                                     ))
