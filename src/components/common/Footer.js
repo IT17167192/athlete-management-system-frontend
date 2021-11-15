@@ -4,7 +4,7 @@ const Footer = (props) => {
     return (
         <footer className="app-footer">
             <div className="container text-center py-3">
-                <small className="copyright">All rights Reserved Kasun 2021</small>
+                <small className="copyright">Interview test - Kasun Gunasekara</small>
 
             </div>
         </footer>

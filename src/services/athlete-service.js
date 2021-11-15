@@ -9,6 +9,14 @@ export const getAllGenders = () => {
         .catch(err => console.log(err))
 };
 
+export const getAthleteById = (athleteId) => {
+    return fetch(`${API}${API_ROUTES.athlete_base_url}/${athleteId}`, {
+        method: 'GET'
+    })
+        .then(response => response.json())
+        .catch(err => console.log(err))
+};
+
 export const addAthlete = (data) => {
     return fetch(`${API}${API_ROUTES.athlete_base_url}`, {
         method: "POST",
@@ -48,16 +56,15 @@ export const addAthleteEvents = (data) => {
         .catch(err => console.log(err))
 };
 
-export const uploadImage = (data, athleteName, athleteId) => {
+export const uploadImage = (data, athleteId) => {
     let formdata = new FormData();
-    console.log(data)
     formdata.append("image", data);
 
     fetch(`${API}${API_ROUTES.athlete_base_url+ API_ROUTES.athlete_image_upload_url }/${athleteId}`,{
         method: 'PUT',
         body: formdata,
     })
-        .then(response => console.log(response.text()))
+        .then(response => response)
         .catch(error => console.log('error', error));
 };
 

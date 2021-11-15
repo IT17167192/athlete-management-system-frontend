@@ -14,7 +14,13 @@ import moment from "moment";
 import {useDropzone} from "react-dropzone";
 
 //services
-import {updateAthlete, addAthleteEvents, getAllGenders} from "../../services/athlete-service";
+import {
+    updateAthlete,
+    addAthleteEvents,
+    getAllGenders,
+    getAthleteById,
+    uploadImage
+} from "../../services/athlete-service";
 import {getAllEvents} from "../../services/event-service";
 
 const Swal = require('sweetalert2');
@@ -65,7 +71,6 @@ const UpdateModal = (props) => {
     const [selectedCountry, setSelectedCountry] = useState("");
 
     useEffect(() => {
-        console.log(props.athlete)
         setInitialValues();
         getGenders();
         getEvents();
@@ -76,14 +81,13 @@ const UpdateModal = (props) => {
             'date' : moment(props.athlete.dob).format("YYYY-MM-DD"),
             'image': props.athlete.image
         });
-
+        getAthleteDetailsById(props.athlete.athleteId);
         setSelectedDate(moment(props.athlete.dob, "YYYY/MM/DD H:mm").valueOf());
         countries.forEach(c => {
             if(c.code === props.athlete.country)
                 setSelectedCountry(c);
         });
         setFiles([...files, props.athlete.image]);
-        setSelectedEvents(props.athlete.events);
     }, [props.athlete, props.modalId]);
 
     const setInitialValues = () => {
@@ -119,6 +123,14 @@ const UpdateModal = (props) => {
             })
             .catch(err => console.error(err));
     };
+
+    const getAthleteDetailsById = (athleteId) => {
+        getAthleteById(athleteId)
+            .then(data => {
+                setSelectedEvents(data.events);
+            })
+            .catch(err => console.error(err))
+    }
 
     //Change events handlers
     const onDataChange = (name) => (event) => {
@@ -244,7 +256,6 @@ const UpdateModal = (props) => {
             }
         };
 
-        console.log(athleteObj);
         //validate athlete object
         if(formValidator(athleteObj)){
             //show error
@@ -253,7 +264,6 @@ const UpdateModal = (props) => {
         }else {
             updateAthlete(athleteObj, props.athlete.athleteId)
                 .then(addAthleteResponse => {
-                    console.log(addAthleteResponse);
                     let athleteEvents = [];
                     selectedEvents.forEach(ev => {
                         athleteEvents.push({
@@ -261,26 +271,21 @@ const UpdateModal = (props) => {
                             eventId: ev.eventId
                         })
                     })
-                    setLoaderSubmit(false);
-                    Swal.fire(
-                        {
-                            title: 'Athlete updated',
-                            text: "Athlete data updated successfully!",
-                            icon: 'success',
-                            confirmButtonColor: '#7AC943',
-                        }
-                    )
-                    console.log(athleteEvents);
-                    // addAthleteEvents(athleteEvents)
-                    //     .then(responseAthleteEvents => {
-                    //         // if(files[0]){
-                    //         //     uploadImage(files[0])
-                    //         //         .then(responseAthleteImage => {
-                    //         //             console.log(responseAthleteImage);
-                    //         //         })
-                    //         // }
-                    //
-                    //     })
+                    addAthleteEvents(athleteEvents)
+                        .then(responseAthleteEvents => {
+                            if(files[0]){
+                                uploadImage(files[0], addAthleteResponse.athleteId)
+                            }
+                            setLoaderSubmit(false);
+                            Swal.fire(
+                                {
+                                    title: 'Athlete updated',
+                                    text: "Athlete data updated successfully!",
+                                    icon: 'success',
+                                    confirmButtonColor: '#7AC943',
+                                }
+                            )
+                        })
 
                 })
                 .catch(error => console.error(error));
@@ -301,9 +306,7 @@ const UpdateModal = (props) => {
                                 <h3 className="text-center">Athlete Photo</h3>
                                 <div className="row mt-3">
                                     <div className="col-12">
-                                        <Image className="w-100 h-100" src={'data:image/png;base64, ' + image}/>
-
-
+                                        <Image className="w-100 h-100" src={files[0] ? files[0].preview : 'data:image/png;base64, ' + image}/>
                                     </div>
                                 </div>
 

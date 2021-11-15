@@ -20,7 +20,10 @@ const ManageAthlete = (props) => {
     const [show, setShow] = useState(false);
     const [modalId, setModalId] = useState(0);
 
-    const handleClose = () => setShow(false);
+    const handleClose = () => {
+        searchOnClick();
+        setShow(false);
+    }
 
     const handleShow = (athlete) => {
         setModalId((modalId+1));
@@ -93,7 +96,7 @@ const ManageAthlete = (props) => {
                 evId = selectedEventId;
         }
         const searchUrl = `${API}${API_ROUTES.athlete_base_url}${API_ROUTES.search_url}?page=0&limit=10&eventId=${evId}&genderId=${selectedGender}&country=${typeof selectedCountry.code !== 'undefined' ? selectedCountry.code : ""}&firstName=${name}`
-        console.log(searchUrl);
+
         setAthletes([]);
         setTotalPages(0);
         setCurrentPage(1);
@@ -115,7 +118,7 @@ const ManageAthlete = (props) => {
                 evId = selectedEventId;
         }
         const searchUrl = `${API}${API_ROUTES.athlete_base_url}${API_ROUTES.search_url}?page=${pageNo}&limit=10&eventId=${evId}&genderId=${selectedGender}&country=${typeof selectedCountry.code !== 'undefined' ? selectedCountry.code : ""}&firstName=${name}`
-        console.log(searchUrl);
+
         setAthletes([]);
         setTotalPages(0);
         setLoaderSubmit(true);
@@ -187,7 +190,7 @@ const ManageAthlete = (props) => {
                                                     <select className="form-select" onChange={genderOnChange}>
                                                         {
                                                             genders.map(gender => (
-                                                                <option value={gender.id}>{gender.type}</option>
+                                                                <option value={gender.id} selected={selectedGender == gender.id}>{gender.type}</option>
                                                             ))
                                                         }
                                                     </select>

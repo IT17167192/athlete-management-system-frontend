@@ -175,12 +175,9 @@ const CreateAthlete = (props) => {
                     console.log(athleteEvents);
                     addAthleteEvents(athleteEvents)
                         .then(responseAthleteEvents => {
-                            // if(files[0]){
-                            //     uploadImage(files[0])
-                            //         .then(responseAthleteImage => {
-                            //             console.log(responseAthleteImage);
-                            //         })
-                            // }
+                            if(files[0]){
+                                uploadImage(files[0], addAthleteResponse.athleteId)
+                            }
                             setLoaderSubmit(false);
                             setValues({
                                 ...values,
@@ -189,7 +186,11 @@ const CreateAthlete = (props) => {
                                 country: "",
                                 date: moment(Date.now()).format("YYYY-MM-DD"),
                             });
-                           setSelectedEvents([]);
+                            setFiles([]);
+                            setSelectedDate(Date.now());
+                            setSelectedEvents([]);
+                            setSelectedCountry("");
+
                             Swal.fire(
                                 {
                                     title: 'Athlete added',
@@ -254,6 +255,13 @@ const CreateAthlete = (props) => {
         }
 
         return true;
+    }
+
+    const [selectedCountry, setSelectedCountry] = useState("");
+
+    const countryOnChange = (c) => {
+        setValues({ ...values, 'country': c.code });
+        setSelectedCountry(c);
     }
 
     return (
@@ -364,8 +372,9 @@ const CreateAthlete = (props) => {
                                                     <div className="col-8">
                                                         <Autocomplete
                                                             onChange={(event, newValue) => {
-                                                                setValues({ ...values, 'country': newValue.code });
+                                                                countryOnChange(newValue ? newValue : '');
                                                             }}
+                                                            value={selectedCountry}
                                                             id="country-select-demo"
                                                             sx={{ width: '100%' }}
                                                             options={countries}
