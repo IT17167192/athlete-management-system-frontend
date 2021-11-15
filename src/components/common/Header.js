@@ -25,7 +25,7 @@ const Header = (props) => {
                                 <div className="search-mobile-trigger d-sm-none col">
                                     <i className="search-mobile-trigger-icon fas fa-search"></i>
                                 </div>
-                                <div className="app-search-box col">
+                                <div className="app-search-box col p-1">
                                     {"athlete management system " + props.history.location.pathname}
                                 </div>
 

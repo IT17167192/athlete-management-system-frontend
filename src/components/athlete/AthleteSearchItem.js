@@ -5,7 +5,7 @@ const AthleteSearchItemm = (props) => {
     const getAge = birthDate => Math.floor((new Date() - new Date(birthDate).getTime()) / 3.15576e+10);
 
     return (
-        <div className="col-6 col-md-4 col-xl-3 col-xxl-2 mt-3">
+        <div className="col-12 col-md-4 col-xl-4 col-xxl-2 mt-3">
             <div className="app-card app-card-doc shadow-sm  h-100">
                 <div className="app-card-thumb-holder p-3">
                     <div className="app-card-thumb">
@@ -13,7 +13,7 @@ const AthleteSearchItemm = (props) => {
                     </div>
                     <a className="app-card-link-mask" href="#file-link"></a>
                 </div>
-                <div className="app-card-body p-3 has-card-actions">
+                <div className="app-card-body p-3 has-card-actions mt-5" style={{cursor: 'pointer'}} onClick={() => props.handleShow(props.athlete)}>
 
                     <h4 className="app-doc-title truncate mb-0"><a href="#file-link">{props.athlete.firstName + " " + props.athlete.lastName}</a></h4>
                     <div className="app-doc-meta">

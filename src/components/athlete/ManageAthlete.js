@@ -1,24 +1,44 @@
 import React, {useEffect, useState} from "react";
 import Footer from "../common/Footer";
-import {getAllGenders, searchAthlete} from "../../services/athlete-service";
-import {getAllEvents} from "../../services/event-service";
 import Loader from "react-loader-spinner";
 import {API, countries, THEME_COLOR_CODE} from "../../constants/Constants";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import Autocomplete from "@mui/material/Autocomplete";
 import AthleteSearchItem from "./AthleteSearchItem";
+import UpdateModal from "./UpdateModal";
+import {Link} from "react-router-dom";
+
 import {API_ROUTES} from "../../constants/Routes";
+import {ROUTES} from "../../constants/Routes";
+//services
+import {getAllGenders, searchAthlete} from "../../services/athlete-service";
+import {getAllEvents} from "../../services/event-service";
 
 const ManageAthlete = (props) => {
+    const [athlete, setAthlete] = useState(0);
+    const [show, setShow] = useState(false);
+    const [modalId, setModalId] = useState(0);
+
+    const handleClose = () => setShow(false);
+
+    const handleShow = (athlete) => {
+        setModalId((modalId+1));
+        setAthlete(athlete);
+        setShow(true)
+    };
+
     const [genders, setGenders] = useState([]);
     const [events, setEvents] = useState([]);
 
     //selected values
     let selectedEvent = "";
+    const [selectedEv, setSelectedEv] = useState('');
     const [selectedGender, setSelectedGender] = useState("");
     const [selectedCountry, setSelectedCountry] = useState("");
     const [selectedEventId, setSelectedEventId] = useState("");
+    const [totalPages, setTotalPages] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
     const [name, setSelectedName] = useState("");
     const [athletes, setAthletes] = useState([]);
 
@@ -58,31 +78,89 @@ const ManageAthlete = (props) => {
     };
 
     let evId = "";
-    const eventOnChange = (id) => {
-        console.log(id);
-        evId = id;
-        setSelectedEventId(id);
+    const eventOnChange = (event) => {
+        evId = event.eventId;
+        setSelectedEventId(event.eventId);
+        setSelectedEv(event);
     };
 
 
     const searchOnClick = () => {
         if (evId == ""){
-            console.log(selectedEventId == "")
             if(selectedEventId == "")
                 evId = 0
             else
                 evId = selectedEventId;
         }
-        const searchUrl = `${API}${API_ROUTES.athlete_base_url}${API_ROUTES.search_url}?eventId=${evId}&genderId=${selectedGender}&country=${selectedCountry}&firstName=${name}`
+        const searchUrl = `${API}${API_ROUTES.athlete_base_url}${API_ROUTES.search_url}?page=0&limit=10&eventId=${evId}&genderId=${selectedGender}&country=${typeof selectedCountry.code !== 'undefined' ? selectedCountry.code : ""}&firstName=${name}`
         console.log(searchUrl);
         setAthletes([]);
+        setTotalPages(0);
+        setCurrentPage(1);
         setLoaderSubmit(true);
         searchAthlete(searchUrl)
             .then(data => {
                 setLoaderSubmit(false);
-                setAthletes(data);
+                setAthletes(data.content);
+                setTotalPages(data.totalPages)
             })
             .catch(err => console.error(err));
+    };
+
+    const onPaginationClick = (pageNo) => {
+        if (evId == ""){
+            if(selectedEventId == "")
+                evId = 0
+            else
+                evId = selectedEventId;
+        }
+        const searchUrl = `${API}${API_ROUTES.athlete_base_url}${API_ROUTES.search_url}?page=${pageNo}&limit=10&eventId=${evId}&genderId=${selectedGender}&country=${typeof selectedCountry.code !== 'undefined' ? selectedCountry.code : ""}&firstName=${name}`
+        console.log(searchUrl);
+        setAthletes([]);
+        setTotalPages(0);
+        setLoaderSubmit(true);
+        searchAthlete(searchUrl)
+            .then(data => {
+                setLoaderSubmit(false);
+                setAthletes(data.content);
+                setTotalPages(data.totalPages)
+                setCurrentPage(pageNo+1);
+            })
+            .catch(err => console.error(err));
+    };
+
+    const createPagination = (totalPages) => {
+            let pagination = [];
+            for (let i = 0; i < totalPages; i++){
+                pagination.push(<li style={{cursor: 'pointer'}} className={(i+1) == currentPage ? "page-item active" : "page-item"}><a className="page-link" onClick={() => onPaginationClick(i)}>{i+1}</a></li>);
+            }
+
+            return (
+                <ul className="pagination justify-content-center">
+                    <li className={currentPage === 1 ? "page-item disabled" : "page-item"} onClick={() => onPaginationClick((currentPage-2))}>
+                        <div className="page-link" style={{cursor: 'pointer'}}>Previous</div>
+                    </li>
+                        {pagination}
+                    <li className={currentPage === totalPages ? "page-item disabled" : "page-item"} onClick={() => onPaginationClick(currentPage)}>
+                        <div className="page-link" style={{cursor: 'pointer'}}>Next</div>
+                    </li>
+                </ul>
+            );
+    };
+
+
+    const onClearClick = () => {
+        setAthletes([]);
+        setTotalPages(0);
+        setCurrentPage(1);
+        setLoaderSubmit(false);
+        setSelectedEventId("");
+        setSelectedName("");
+        setCurrentPage(1);
+        setTotalPages(0);
+        setSelectedGender(genders[0].id);
+        setSelectedCountry("");
+        setSelectedEv('');
     };
 
     return (
@@ -121,16 +199,17 @@ const ManageAthlete = (props) => {
                                             </div>
                                         </div>
                                         <div className="row mt-3">
-                                            <div className="col-6">
+                                            <div className="col-6 mt-3">
                                                 <Autocomplete
                                                     onChange={(event, newValue) => {
-                                                        setSelectedCountry(newValue.code)
+                                                        setSelectedCountry(newValue ? newValue : '')
                                                     }}
+                                                    value={selectedCountry}
                                                     id="country-select-demo"
-                                                    sx={{ width: 300 }}
+                                                    sx={{ width: '100%' }}
                                                     options={countries}
                                                     autoHighlight
-                                                    getOptionLabel={(option) => option.label}
+                                                    getOptionLabel={options => options.label ? options.label + " - " + options.code : options}
                                                     renderOption={(props, option) => (
                                                         <Box component="li" sx={{ '& > img': { mr: 2, flexShrink: 0 } }} {...props}>
                                                             <img
@@ -159,23 +238,21 @@ const ManageAthlete = (props) => {
                                             <div className="col-6">
                                                 {!loaderEvents ? (
                                                     <Autocomplete
-                                                        onChange={(event, newValue) => {
-                                                            eventOnChange(newValue ? newValue.eventId : "")
-                                                        }}
-                                                        id="id-event"
-                                                        sx={{ width: '100%' }}
-                                                        options={events}
-                                                        autoHighlight
-                                                        getOptionLabel={(option) => option.name}
+                                                        onChange={(event, value) => eventOnChange(value)}
+                                                        freeSolo
+                                                        value={selectedEv}
+                                                        id="free-solo-2-demo"
+                                                        disableClearable
+                                                        options={events.map((option) => option)}
+                                                        getOptionLabel={options => options.name ? options.name : options}
                                                         renderInput={(params) => (
                                                             <TextField
                                                                 {...params}
-                                                                label="Select Event"
-                                                                value={events}
-                                                                inputProps={{
-                                                                    ...params.inputProps,
-                                                                    autoComplete: 'new-password', // disable autocomplete and autofill
-                                                                }}
+                                                                id={'eventAutoComplete'}
+                                                                label={'Select Event'}
+                                                                margin="normal"
+                                                                variant="outlined"
+                                                                InputProps={{...params.InputProps, type: 'search'}}
                                                             />
                                                         )}
                                                     />
@@ -193,12 +270,12 @@ const ManageAthlete = (props) => {
                                                 </button>
                                             </div>
                                             <div className="col-auto">
-                                                <button className="btn btn-secondary">
+                                                <Link to={ROUTES.create_athlete_page} className="btn btn-secondary">
                                                     New
-                                                </button>
+                                                </Link>
                                             </div>
                                             <div className="col-auto">
-                                                <button className="btn btn-danger">
+                                                <button className="btn btn-danger" onClick={onClearClick}>
                                                     clear
                                                 </button>
                                             </div>
@@ -208,19 +285,29 @@ const ManageAthlete = (props) => {
                             </div>
                         </div>
                         <div className="row mt-3">
-                            {console.log(athletes)}
                             {
                                 loaderSubmit ? ("Loading") : (
                                     athletes.map(athlete => (
-                                        <AthleteSearchItem athlete={athlete}/>
+                                        <AthleteSearchItem handleShow={handleShow} athlete={athlete}/>
                                     ))
                                 )
                             }
                         </div>
+                        <div className="row mt-3">
+                            <div className="col-12">
+                                <nav className="app-pagination mt-5">
+                                    {athletes.length > 0 ? createPagination(totalPages) : ''}
+                                </nav>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+
                 <Footer props={props} />
             </div>
+            {/*Update modal*/}
+            <UpdateModal show={show} handleClose={handleClose} athlete={athlete} modalId={modalId}/>
         </div>
     );
 }

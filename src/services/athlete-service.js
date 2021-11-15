@@ -22,6 +22,19 @@ export const addAthlete = (data) => {
         .catch(err => console.log(err))
 };
 
+export const updateAthlete = (data, athleteId) => {
+    return fetch(`${API}${API_ROUTES.athlete_base_url}/${athleteId}`, {
+        method: "PUT",
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+        .then(response => response.json())
+        .catch(err => console.log(err))
+};
+
 export const addAthleteEvents = (data) => {
     return fetch(`${API}${API_ROUTES.athlete_base_url+"/"+API_ROUTES.event_base_url}`, {
         method: "POST",

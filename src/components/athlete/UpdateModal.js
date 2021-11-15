@@ -1,26 +1,25 @@
 import React, {useEffect, useState} from "react";
-import Footer from "../common/Footer";
-import Image from 'react-bootstrap/Image';
-import {useDropzone} from 'react-dropzone';
-import Box from '@mui/material/Box';
-import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
-import 'date-fns';
-import moment from "moment";
-import Loader from "react-loader-spinner";
-import {THEME_COLOR_CODE, WHITE_COLOR_CODE, countries} from "../../constants/Constants";
+import Modal from "react-bootstrap/Modal";
+import Button from "react-bootstrap/Button";
+import Image from "react-bootstrap/Image";
 import DatePicker from "react-datepicker";
+import Loader from "react-loader-spinner";
+import {countries, THEME_COLOR_CODE, WHITE_COLOR_CODE} from "../../constants/Constants";
+import Autocomplete from "@mui/material/Autocomplete";
+import Box from "@mui/material/Box";
+import TextField from "@mui/material/TextField";
+import {toast, ToastContainer} from "react-toastify";
+import Footer from "../common/Footer";
+import moment from "moment";
+import {useDropzone} from "react-dropzone";
 
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-
-//Services
-import {addAthlete, addAthleteEvents, getAllGenders, uploadImage} from "../../services/athlete-service";
+//services
+import {updateAthlete, addAthleteEvents, getAllGenders} from "../../services/athlete-service";
 import {getAllEvents} from "../../services/event-service";
+
 const Swal = require('sweetalert2');
 
-
-const CreateAthlete = (props) => {
+const UpdateModal = (props) => {
     const [values, setValues] = useState({
         firstName: "",
         lastName: "",
@@ -46,6 +45,7 @@ const CreateAthlete = (props) => {
     const [selectedDate, setSelectedDate] = useState(Date.now());
 
     const [files, setFiles] = useState([]);
+
     const {getRootProps, getInputProps} = useDropzone({
         accept: 'image/*',
         onDrop: acceptedFiles => {
@@ -62,11 +62,41 @@ const CreateAthlete = (props) => {
     let selectedEvent = "";
     const [selectedGender, setSelectedGender] = useState("");
     const [selectedEvents, setSelectedEvents] = useState([]);
+    const [selectedCountry, setSelectedCountry] = useState("");
 
     useEffect(() => {
+        console.log(props.athlete)
+        setInitialValues();
         getGenders();
         getEvents();
-    }, []);
+        setValues({ ...values,
+            'firstName': props.athlete.firstName,
+            'lastName' : props.athlete.lastName,
+            'country' : props.athlete.country,
+            'date' : moment(props.athlete.dob).format("YYYY-MM-DD"),
+            'image': props.athlete.image
+        });
+
+        setSelectedDate(moment(props.athlete.dob, "YYYY/MM/DD H:mm").valueOf());
+        countries.forEach(c => {
+            if(c.code === props.athlete.country)
+                setSelectedCountry(c);
+        });
+        setFiles([...files, props.athlete.image]);
+        setSelectedEvents(props.athlete.events);
+    }, [props.athlete, props.modalId]);
+
+    const setInitialValues = () => {
+        setSelectedEvents([]);
+        setLoaderSubmit(false);
+        setValues({
+            ...values,
+            firstName: "",
+            lastName: "",
+            country: "",
+            date: moment(Date.now()).format("YYYY-MM-DD"),
+        });
+    };
 
     const getGenders = () => {
         setLoaderGender(true);
@@ -141,70 +171,6 @@ const CreateAthlete = (props) => {
         setValues({ ...values, 'date': moment(date).format("YYYY-MM-DD") });
     };
 
-    const clickOnSubmit = () => {
-
-        setLoaderSubmit(true);
-        setError(false);
-
-        let athleteObj = {
-            firstName: firstName,
-            lastName: lastName,
-            country: country,
-            image:  "",
-            dob: date,
-            gender: {
-                "id": selectedGender
-            }
-        };
-        //validate athlete object
-        if(formValidator(athleteObj)){
-            //show error
-            setError(true);
-            setLoaderSubmit(false);
-        }else {
-            addAthlete(athleteObj)
-                .then(addAthleteResponse => {
-                    console.log(addAthleteResponse);
-                    let athleteEvents = [];
-                    selectedEvents.forEach(ev => {
-                        athleteEvents.push({
-                            athleteId: addAthleteResponse.athleteId,
-                            eventId: ev.eventId
-                        })
-                    })
-                    console.log(athleteEvents);
-                    addAthleteEvents(athleteEvents)
-                        .then(responseAthleteEvents => {
-                            // if(files[0]){
-                            //     uploadImage(files[0])
-                            //         .then(responseAthleteImage => {
-                            //             console.log(responseAthleteImage);
-                            //         })
-                            // }
-                            setLoaderSubmit(false);
-                            setValues({
-                                ...values,
-                                firstName: "",
-                                lastName: "",
-                                country: "",
-                                date: moment(Date.now()).format("YYYY-MM-DD"),
-                            });
-                           setSelectedEvents([]);
-                            Swal.fire(
-                                {
-                                    title: 'Athlete added',
-                                    text: "New athlete added successfully!",
-                                    icon: 'success',
-                                    confirmButtonColor: '#7AC943',
-                                }
-                            )
-                        })
-
-                })
-                .catch(error => console.error(error));
-        }
-
-    };
 
     const formValidator = (athleteObj) => {
         let flag = false;
@@ -256,24 +222,88 @@ const CreateAthlete = (props) => {
         return true;
     }
 
+    const clickOnUpdate = () => {
+
+        setLoaderSubmit(true);
+        setError(false);
+        let genderType;
+        genders.forEach(g => {
+            if(selectedGender == g.id)
+                genderType = g.type;
+        })
+        let athleteObj = {
+            athleteId: props.athlete.athleteId,
+            firstName: firstName,
+            lastName: lastName,
+            country: country,
+            image:  image,
+            dob: date,
+            gender: {
+                "id": selectedGender,
+                "type": genderType
+            }
+        };
+
+        console.log(athleteObj);
+        //validate athlete object
+        if(formValidator(athleteObj)){
+            //show error
+            setError(true);
+            setLoaderSubmit(false);
+        }else {
+            updateAthlete(athleteObj, props.athlete.athleteId)
+                .then(addAthleteResponse => {
+                    console.log(addAthleteResponse);
+                    let athleteEvents = [];
+                    selectedEvents.forEach(ev => {
+                        athleteEvents.push({
+                            athleteId: addAthleteResponse.athleteId,
+                            eventId: ev.eventId
+                        })
+                    })
+                    setLoaderSubmit(false);
+                    Swal.fire(
+                        {
+                            title: 'Athlete updated',
+                            text: "Athlete data updated successfully!",
+                            icon: 'success',
+                            confirmButtonColor: '#7AC943',
+                        }
+                    )
+                    console.log(athleteEvents);
+                    // addAthleteEvents(athleteEvents)
+                    //     .then(responseAthleteEvents => {
+                    //         // if(files[0]){
+                    //         //     uploadImage(files[0])
+                    //         //         .then(responseAthleteImage => {
+                    //         //             console.log(responseAthleteImage);
+                    //         //         })
+                    //         // }
+                    //
+                    //     })
+
+                })
+                .catch(error => console.error(error));
+        }
+
+    };
+
     return (
-        <div>
-            <div className="app-wrapper">
-                <div className="app-content pt-3 p-md-3 p-lg-4">
-                    <div className="container-xl">
-                        <h1 className="app-page-title">Create Athlete</h1>
-                        <hr className="mb-4"/>
-                        <div className="row g-4 settings-section">
-                            <div className="col-12 col-md-4">
-                                <h3 className="section-title">Athlete Photo</h3>
+        <div className="col-12" key={props.modalId}>
+            <Modal size={"xl"} show={props.show} onHide={props.handleClose}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Update Athlete</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <div className="p-1">
+                        <div className="row">
+                            <div className="col-4">
+                                <h3 className="text-center">Athlete Photo</h3>
                                 <div className="row mt-3">
                                     <div className="col-12">
-                                        {
-                                            files[0] && (
-                                                <Image className="w-100 h-100"
-                                                       src={files[0] ? files[0].preview : 'Upload Image'}/>
-                                            )
-                                        }
+                                        <Image className="w-100 h-100" src={'data:image/png;base64, ' + image}/>
+
+
                                     </div>
                                 </div>
 
@@ -291,7 +321,7 @@ const CreateAthlete = (props) => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="col-12 col-md-8">
+                            <div className="col-8">
                                 <div className="app-card app-card-settings shadow-sm p-4">
 
                                     <div className="app-card-body">
@@ -339,6 +369,7 @@ const CreateAthlete = (props) => {
                                                             <label className="form-label">Gender</label>
                                                         </div>
                                                         <div className="col-8">
+                                                            {/*selected={props.athlete.gender.id == gender.id}*/}
                                                             {!loaderGender ? (
                                                                 <select className="form-select" onChange={genderOnChange}>
                                                                     {
@@ -364,8 +395,9 @@ const CreateAthlete = (props) => {
                                                     <div className="col-8">
                                                         <Autocomplete
                                                             onChange={(event, newValue) => {
-                                                                setValues({ ...values, 'country': newValue.code });
+                                                                setSelectedCountry(newValue ? newValue : '')
                                                             }}
+                                                            value={selectedCountry}
                                                             id="country-select-demo"
                                                             sx={{ width: '100%' }}
                                                             options={countries}
@@ -406,7 +438,9 @@ const CreateAthlete = (props) => {
                                 </div>
                             </div>
                         </div>
-                        <div className="row mt-3 g-4 settings-section">
+                        <div className="row mt-3">
+                        </div>
+                        <div className="row mt-5">
                             <div className="col-12">
                                 <div className="app-card app-card-settings shadow-sm p-4">
                                     <div className="app-card-body">
@@ -448,24 +482,24 @@ const CreateAthlete = (props) => {
                                         <div className="table-responsive">
                                             <table className="table app-table-hover mb-0 text-left">
                                                 <thead>
-                                                    <tr>
-                                                        <th className="cell">Event Name</th>
-                                                        <th className="cell">Remove</th>
-                                                    </tr>
+                                                <tr>
+                                                    <th className="cell">Event Name</th>
+                                                    <th className="cell">Remove</th>
+                                                </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {
-                                                        selectedEvents.map(e => (
-                                                            <tr>
-                                                                <td className="cell">{e.name}</td>
-                                                                <td className="cell">
-                                                                    <a style={{cursor: "pointer"}}
-                                                                        onClick={() => onRemoveButtonClicked(e.eventId)}
-                                                                        className="btn-sm btn-outline-danger">X</a>
-                                                                </td>
-                                                            </tr>
-                                                        ))
-                                                    }
+                                                {
+                                                    selectedEvents && (selectedEvents.map(e => (
+                                                        <tr>
+                                                            <td className="cell">{e.name}</td>
+                                                            <td className="cell">
+                                                                <a style={{cursor: "pointer"}}
+                                                                   onClick={() => onRemoveButtonClicked(e.eventId)}
+                                                                   className="btn-sm btn-outline-danger">X</a>
+                                                            </td>
+                                                        </tr>
+                                                    )))
+                                                }
                                                 </tbody>
                                             </table>
                                         </div>
@@ -475,22 +509,22 @@ const CreateAthlete = (props) => {
                             </div>
                         </div>
 
-                        <div className="row mt-3">
-                            <div className="text-end">
-                                <button className="btn app-btn-primary"
-                                        onClick={clickOnSubmit}
-                                        disabled={loaderEvents & loaderGender & loaderSubmit}>
-                                    {loaderSubmit ? (<Loader type="Bars" color={WHITE_COLOR_CODE} height={10} width={30} />) : 'Save'}
-                                </button>
-                            </div>
-                        </div>
+                        <ToastContainer />
                     </div>
-                </div>
-                <ToastContainer />
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={props.handleClose}>
+                        Close
+                    </Button>
+                    <Button variant="primary" onClick={clickOnUpdate} style={{color: "#ffffff"}}>
+                        Update Changes
+                    </Button>
+                </Modal.Footer>
                 <Footer props={props}/>
-            </div>
+            </Modal>
+
         </div>
     );
 }
 
-export default CreateAthlete;
+export default UpdateModal;
